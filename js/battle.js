@@ -14,21 +14,21 @@ var BattleScene = new Phaser.Class({
         this.cameras.main.setBackgroundColor("rgba(0, 200, 0, 0.5)");
         this.startBattle();
         // on wake event we call startBattle too
-        this.sys.events.on('wake', this.startBattle, this);             
+        this.sys.events.on('wake', this.startBattle, this);
     },
     startBattle: function() {
         // player character - warrior
-        var warrior = new PlayerCharacter(this, 250, 50, "player", 212, "Warrior", 100, 20);
+        var warrior = new PlayerCharacter(this, 250, 50, "player", 251, "Warrior", 100, 20,5);
         this.add.existing(warrior);
         
         // player character - mage
-        var mage = new PlayerCharacter(this, 250, 100, "player", 4, "Mage", 80, 8);
+        var mage = new PlayerCharacter(this, 250, 100, "sideKick", 143 , "Mage", 80, 8, 25);
         this.add.existing(mage);            
         
-        var dragonblue = new Enemy(this, 50, 50, "dragonblue", null, "Dragon", 50, 3);
+        var dragonblue = new Enemy(this, 50, 50, "dragonblue", null, "Dragon", 50, 5, 10);
         this.add.existing(dragonblue);
         
-        var dragonOrange = new Enemy(this, 50, 100, "dragonorrange", null,"Dragon2", 50, 3);
+        var dragonOrange = new Enemy(this, 50, 100, "dragonorrange", null,"Dragon2", 50, 3, 15);
         this.add.existing(dragonOrange);
         
         // array with heroes
@@ -67,7 +67,9 @@ var BattleScene = new Phaser.Class({
                 r = Math.floor(Math.random() * this.heroes.length);
             } while(!this.heroes[r].living) 
             // call the enemy's attack function 
-            this.units[this.index].attack(this.heroes[r]);  
+            this.units[this.index].attack(this.heroes[r]);
+            // abanar a camara
+            this.cameras.main.shake(200, 0.01);
             // add timer for the next turn, so will have smooth gameplay
             this.time.addEvent({ delay: 3000, callback: this.nextTurn, callbackScope: this });
         }
@@ -90,8 +92,10 @@ var BattleScene = new Phaser.Class({
     },
     // when the player have selected the enemy to be attacked
     receivePlayerSelection: function(action, target) {
-        if(action == "attack") {            
-            this.units[this.index].attack(this.enemies[target]);              
+        if(action == "attack") {
+            this.units[this.index].attack(this.enemies[target]);
+            // abanar a camara
+            this.cameras.main.shake(200, 0.01);
         }
         // next turn in 3 seconds
         this.time.addEvent({ delay: 3000, callback: this.nextTurn, callbackScope: this });        
@@ -118,11 +122,12 @@ var Unit = new Phaser.Class({
 
     initialize:
 
-    function Unit(scene, x, y, texture, frame, type, hp, damage) {
+    function Unit(scene, x, y, texture, frame, type, hp, damage, magic) {
         Phaser.GameObjects.Sprite.call(this, scene, x, y, texture, frame)
         this.type = type;
         this.maxHp = this.hp = hp;
-        this.damage = damage; // default damage     
+        this.damage = damage; // default damage
+        this.magic = magic;
         this.living = true;         
         this.menuItem = null;
     },
@@ -181,7 +186,7 @@ var MenuItem = new Phaser.Class({
     },
     
     select: function() {
-        this.setColor("#f8ff38");
+        this.setColor("#ff3838");
     },
     
     deselect: function() {
@@ -296,6 +301,7 @@ var ActionsMenu = new Phaser.Class({
     function ActionsMenu(x, y, scene) {
         Menu.call(this, x, y, scene);   
         this.addMenuItem("Attack");
+        this.addMenuItem("Spell")
     },
     confirm: function() { 
         // we select an action and go to the next menu and choose from the enemies to apply the action
@@ -426,15 +432,16 @@ var UIScene = new Phaser.Class({
             } else if(event.code === "ArrowDown") {
                 this.currentMenu.moveSelectionDown();
             } else if(event.code === "ArrowRight" || event.code === "Shift") {
-
-            } else if(event.code === "Space" || event.code === "ArrowLeft") {
+                this.currentMenu.deselect();
+                this.currentMenu = this.actionsMenu;
+            } else if(event.code === "Space") {
                 this.currentMenu.confirm();
             } 
         }
     },
 });
 
-// the message class extends containter 
+// the message class extends container
 var Message = new Phaser.Class({
 
     Extends: Phaser.GameObjects.Container,

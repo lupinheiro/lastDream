@@ -25,6 +25,7 @@ var BootScene = new Phaser.Class({
         
         // our two characters
         this.load.spritesheet('player', 'assets/meuboneco.png', { frameWidth: 64, frameHeight: 64 });
+        this.load.spritesheet('sideKick', 'assets/personagem.png', { frameWidth: 64, frameHeight: 64 });
     },
 
     create: function ()
@@ -67,7 +68,9 @@ var WorldScene = new Phaser.Class({
 
         this.anims.create({
             key: 'left',
-            frames: this.anims.generateFrameNumbers('player', { frames: [143,144,145,146,147,148,149,150,151]}),
+            frames: this.anims.generateFrameNumbers('player',{
+                start: 143,
+            end:151}),
             frameRate: 10,
             repeat: -1
         });
