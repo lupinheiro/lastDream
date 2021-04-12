@@ -69,7 +69,7 @@ var WorldScene = new Phaser.Class({
             repeat: -1
         });
         
-        // animação para a direita
+        // animação para a direita.
         this.anims.create({
             key: 'right',
             frames: this.anims.generateFrameNumbers('player', { frames: [1, 7, 1, 13] }),
