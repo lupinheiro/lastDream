@@ -13,19 +13,23 @@ var BootScene = new Phaser.Class({
 
     preload: function ()
     {
-        // mapa do mundo
+        // map tiles
         this.load.image('tiles', 'assets/map/spritesheet.png');
         
-        // mapa em formato json
+        // map in json format
         this.load.tilemapTiledJSON('map', 'assets/map/map.json');
         
-        // personagens
-        this.load.spritesheet('player', 'assets/RPG_assets.png', { frameWidth: 16, frameHeight: 16 });
+        // enemies
+        this.load.image("dragonblue", "assets/dragonblue.png");
+        this.load.image("dragonorrange", "assets/dragonorrange.png");
+        
+        // our two characters
+        this.load.spritesheet('player', 'assets/meuboneco.png', { frameWidth: 64, frameHeight: 64 });
     },
 
     create: function ()
     {
-        // Criar a WorldScene
+        // start the WorldScene
         this.scene.start('WorldScene');
     }
 });
@@ -48,96 +52,103 @@ var WorldScene = new Phaser.Class({
 
     create: function ()
     {
-        // cria o mapa
+        // create the map
         var map = this.make.tilemap({ key: 'map' });
         
-        // elementos do mapa
+        // first parameter is the name of the tilemap in tiled
         var tiles = map.addTilesetImage('spritesheet', 'tiles');
         
-        // criar as duas layers
+        // creating the layers
         var grass = map.createStaticLayer('Grass', tiles, 0, 0);
         var obstacles = map.createStaticLayer('Obstacles', tiles, 0, 0);
         
-        // colisão com os objetos
+        // make all tiles in obstacles collidable
         obstacles.setCollisionByExclusion([-1]);
-        
-        //  animação "seta para a esquerda", é o inverso do "seta para a direita"
+
         this.anims.create({
             key: 'left',
-            frames: this.anims.generateFrameNumbers('player', { frames: [1, 7, 1, 13]}),
+            frames: this.anims.generateFrameNumbers('player', { frames: [143,144,145,146,147,148,149,150,151]}),
             frameRate: 10,
             repeat: -1
         });
-        
-        // animação para a direita.
+
+        // animation with key 'right'
         this.anims.create({
             key: 'right',
-            frames: this.anims.generateFrameNumbers('player', { frames: [1, 7, 1, 13] }),
+            frames: this.anims.generateFrameNumbers('player', { frames: [143,144,145,146,147,148,149,150,151] }),
             frameRate: 10,
             repeat: -1
         });
-        //animação para "cima"
         this.anims.create({
             key: 'up',
-            frames: this.anims.generateFrameNumbers('player', { frames: [2, 8, 2, 14]}),
+            frames: this.anims.generateFrameNumbers('player', { frames: [104,105,106,107,108,109,110,111,112]}),
             frameRate: 10,
             repeat: -1
         });
-        //animação para "baixo"
         this.anims.create({
             key: 'down',
-            frames: this.anims.generateFrameNumbers('player', { frames: [ 0, 6, 0, 12 ] }),
+            frames: this.anims.generateFrameNumbers('player', { frames: [130,131,132,133,134,135,136,137,138] }),
             frameRate: 10,
             repeat: -1
         });        
 
-        // sprite do player usando physics
+        // our player sprite created through the phycis system
         this.player = this.physics.add.sprite(50, 100, 'player', 6);
         
-        // impedir que se saia do mapa
+        // don't go out of the map
         this.physics.world.bounds.width = map.widthInPixels;
         this.physics.world.bounds.height = map.heightInPixels;
         this.player.setCollideWorldBounds(true);
         
-        // colidir com os obstaculos
+        // don't walk on trees
         this.physics.add.collider(this.player, obstacles);
 
-        // limitar a camara à area do mapa
+        // limit camera to map
         this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
         this.cameras.main.startFollow(this.player);
         this.cameras.main.roundPixels = true; // avoid tile bleed
     
-        // input do utilizador
+        // user input
         this.cursors = this.input.keyboard.createCursorKeys();
         
-        // spawn dos inimigos
+        // where the enemies will be
         this.spawns = this.physics.add.group({ classType: Phaser.GameObjects.Zone });
         for(var i = 0; i < 30; i++) {
             var x = Phaser.Math.RND.between(0, this.physics.world.bounds.width);
             var y = Phaser.Math.RND.between(0, this.physics.world.bounds.height);
             // parameters are x, y, width, height
             this.spawns.create(x, y, 20, 20);            
-        }        
-        // collider para os inimigos
+        }
+        this.player.setScale(.5)
+        // add collider
         this.physics.add.overlap(this.player, this.spawns, this.onMeetEnemy, false, this);
+        // we listen for 'wake' event
+        this.sys.events.on('wake', this.wake, this);
+
+    },
+    wake: function() {
+        this.cursors.left.reset();
+        this.cursors.right.reset();
+        this.cursors.up.reset();
+        this.cursors.down.reset();
     },
     onMeetEnemy: function(player, zone) {        
-        // mover a zona colisão / spawn
+        // we move the zone to some other location
         zone.x = Phaser.Math.RND.between(0, this.physics.world.bounds.width);
         zone.y = Phaser.Math.RND.between(0, this.physics.world.bounds.height);
         
-        // efeito shake
+        // shake the world
         this.cameras.main.shake(300);
         
-        // começar a luta
+        this.input.stopPropagation();
+        // start battle 
+        this.scene.switch('BattleScene');                
     },
     update: function (time, delta)
-    {
-    //    this.controls.update(delta);
-    
+    {             
         this.player.body.setVelocity(0);
-
-        // movimento horizontal
+        
+        // Horizontal movement
         if (this.cursors.left.isDown)
         {
             this.player.body.setVelocityX(-80);
@@ -146,8 +157,7 @@ var WorldScene = new Phaser.Class({
         {
             this.player.body.setVelocityX(80);
         }
-
-        // movimento vertical
+        // Vertical movement
         if (this.cursors.up.isDown)
         {
             this.player.body.setVelocityY(-80);
@@ -157,7 +167,7 @@ var WorldScene = new Phaser.Class({
             this.player.body.setVelocityY(80);
         }        
 
-        // rotação do player (mudar de sentido)
+        // Update the animation last and give left/right animations precedence over up/down animations
         if (this.cursors.left.isDown)
         {
             this.player.anims.play('left', true);
@@ -184,23 +194,3 @@ var WorldScene = new Phaser.Class({
     
 });
 
-var config = {
-    type: Phaser.AUTO,
-    parent: 'content',
-    width: 320,
-    height: 240,
-    zoom: 2,
-    pixelArt: true,
-    physics: {
-        default: 'arcade',
-        arcade: {
-            gravity: { y: 0 },
-            debug: false // mudar para true para ver as zonas onde aparecem os inimigos / colisão
-        }
-    },
-    scene: [
-        BootScene,
-        WorldScene
-    ]
-};
-var game = new Phaser.Game(config);
