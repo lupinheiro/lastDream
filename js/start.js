@@ -9,7 +9,7 @@ var config = {
         default: 'arcade',
         arcade: {
             gravity: { y: 0 },
-            debug: false // set to true to view zones
+            debug: false // definir como true para ver as zonas em que se encontram inimigos
         }
     },
     scene: [
