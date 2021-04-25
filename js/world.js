@@ -15,6 +15,9 @@ var BootScene = new Phaser.Class({
     {
         // mapa
         this.load.image('tiles', 'assets/map/spritesheet.png');
+
+        // background
+        this.load.image('background','assets/Battleground3.png');
         
         // mapa em json
         this.load.tilemapTiledJSON('map', 'assets/map/map.json');
