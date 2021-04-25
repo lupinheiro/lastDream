@@ -97,6 +97,9 @@ var BattleScene = new Phaser.Class({
             // abanar a camara
             this.cameras.main.shake(200, 0.01);
         }
+        if(action == "spell"){
+            this.units[this.index].spell(this.enemies[target]);
+        }
         // timer para esperar pelo próximo turno
         this.time.addEvent({ delay: 3000, callback: this.nextTurn, callbackScope: this });        
     },    
@@ -135,13 +138,20 @@ var Unit = new Phaser.Class({
     setMenuItem: function(item) {
         this.menuItem = item;
     },
-    // atacar o inimigo selecionada
+    // atacar o inimigo selecionado
     attack: function(target) {
         if(target.living) {
             target.takeDamage(this.damage);
             this.scene.events.emit("Message", this.type + " attacks " + target.type + " for " + this.damage + " damage");
         }
-    },    
+    },
+    // atacar o inimigo selecionado
+    spell: function(target) {
+        if(target.living) {
+            target.takeDamage(this.magic);
+            this.scene.events.emit("Message", this.type + " attacks " + target.type + " for " + this.magic + " Magic damage");
+        }
+    },
     takeDamage: function(damage) {
         this.hp -= damage;
         if(this.hp <= 0) {
@@ -171,7 +181,6 @@ var PlayerCharacter = new Phaser.Class({
         Unit.call(this, scene, x, y, texture, frame, type, hp, damage);
         // espelhar a imagem
         this.flipX = true;
-        
         this.setScale(0.5);
     }
 });
@@ -206,12 +215,12 @@ var Menu = new Phaser.Class({
     
     initialize:
             
-    function Menu(x, y, scene, heroes) {
+    function Menu(x, y,  scene,  heroes) {
         Phaser.GameObjects.Container.call(this, scene, x, y);
         this.menuItems = [];
         this.menuItemIndex = 0;
         this.x = x;
-        this.y = y;        
+        this.y = y;
         this.selected = false;
     },     
     addMenuItem: function(unit) {
@@ -289,7 +298,7 @@ var HeroesMenu = new Phaser.Class({
     initialize:
             
     function HeroesMenu(x, y, scene) {
-        Menu.call(this, x, y, scene);                    
+        Menu.call(this, x, y, scene);
     }
 });
 
@@ -301,7 +310,7 @@ var ActionsMenu = new Phaser.Class({
     function ActionsMenu(x, y, scene) {
         Menu.call(this, x, y, scene);   
         this.addMenuItem("Attack");
-        this.addMenuItem("Spell")
+        this.addMenuItem("Magic");
     },
     confirm: function() { 
         // selecionamos uma ação, vamos para o próximo menu e escolhemos um dos inimigos para aplicar a ação
@@ -352,7 +361,7 @@ var UIScene = new Phaser.Class({
         // container para ter todos os menus
         this.menus = this.add.container();
                 
-        this.heroesMenu = new HeroesMenu(195, 153, this);           
+        this.heroesMenu = new HeroesMenu(195, 153, this);
         this.actionsMenu = new ActionsMenu(100, 153, this);            
         this.enemiesMenu = new EnemiesMenu(8, 153, this);   
         
@@ -403,7 +412,7 @@ var UIScene = new Phaser.Class({
         this.actionsMenu.deselect();
         this.enemiesMenu.deselect();
         this.currentMenu = null;
-        this.battleScene.receivePlayerSelection("attack", index);   
+        this.battleScene.receivePlayerSelection("attack", index);
     },
     onPlayerSelect: function(id) {
         // quando é a vez do jogador, selecionamos um jogador ativo dos menu items dos jogadores, e o primeiro item do menu item das actions
@@ -434,6 +443,7 @@ var UIScene = new Phaser.Class({
             } else if(event.code === "ArrowRight" || event.code === "SHIFT") {
                 this.currentMenu.deselect();
                 this.currentMenu = this.actionsMenu;
+                this.currentMenu.select(0);
             } else if(event.code === "Space") {
                 this.currentMenu.confirm();
             } 
