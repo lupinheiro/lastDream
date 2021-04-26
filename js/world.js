@@ -23,8 +23,8 @@ var BootScene = new Phaser.Class({
         this.load.tilemapTiledJSON('map', 'assets/map/map.json');
         
         // inimigos
-        this.load.image("dragonblue", "assets/dragonblue.png");
-        this.load.image("dragonorrange", "assets/dragonorrange.png");
+        this.load.image("dragon", "assets/dragon.png");
+        this.load.image("demon", "assets/demon.png");
         
         // os nossos dois jogadores
         this.load.spritesheet('player', 'assets/meuboneco.png', { frameWidth: 64, frameHeight: 64 });

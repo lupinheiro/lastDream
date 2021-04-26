@@ -4,7 +4,7 @@ class HealthBar {
     {
         this.bar = new Phaser.GameObjects.Graphics(scene);
 
-        this.x = x+100;
+        this.x = x+130;
         this.y = y+100;
         this.value = 100;
         this.p = 76 / 100;
@@ -19,6 +19,16 @@ class HealthBar {
         if (this.value < 0){
             this.value = 0;
         }
+            this.draw();
+
+            return (this.value === 0);
+        }
+
+        decreaseMagic(magic){
+            this.value -= magic;
+            if (this.value < 0){
+                this.value = 0;
+            }
             this.draw();
 
             return (this.value === 0);
@@ -67,35 +77,36 @@ var BattleScene = new Phaser.Class({
     },
     preload: function() {
     this.load.image("background", 'assets/Battleground3.png');
-},
+    this.load.image("dragon",'assets/dragon.png');
+    },
     create: function ()
     {    
         // mudar a côr do fundo para verde
-        this.add.image(0, 0, 'background').setOrigin(0).setScale(0.1);
+        this.add.image(0, 0, 'background').setOrigin(0).setScale(0.25);
         this.startBattle();
         // on wake event chamamos a StartBattle
         this.sys.events.on('wake', this.startBattle, this);
     },
     startBattle: function() {
         // jogador - warrior
-        var warrior = new PlayerCharacter(this, 250, 50, "player", 251, "Warrior", 100, 50,5);
+        var warrior = new PlayerCharacter(this, 340, 210, "player", 251, "Warrior", 100, 50,5);
         this.add.existing(warrior);
         
         // jogador - mage
-        var mage = new PlayerCharacter(this, 250, 100, "sideKick", 143 , "Mage", 80, 50, 25);
+        var mage = new PlayerCharacter(this, 340, 170, "sideKick", 143 , "Mage", 80, 50, 25);
         this.add.existing(mage);            
         
-        var dragonblue = new Enemy(this, 50, 50, "dragonblue", null, "Dragon", 50, 5, 10);
-        this.add.existing(dragonblue);
+        var dragon = new Enemy(this, 50, 190, "dragon", null, "Dragon", 50, 5, 10);
+        this.add.existing(dragon).setScale(0.5);
         
-        var dragonOrange = new Enemy(this, 50, 100, "dragonorrange", null,"Dragon2", 50, 3, 15);
-        this.add.existing(dragonOrange);
+        var demon = new Enemy(this, 50, 150, "demon", null,"Demon", 50, 3, 15);
+        this.add.existing(demon).setScale(0.5);
         
         // array dos jogadores
         this.heroes = [ warrior, mage ];
         // array dos inimigos
-        this.enemies = [ dragonblue, dragonOrange ];
-        // array com as jogadores e inimigos que atacam
+        this.enemies = [ demon, dragon ];
+        // array com os jogadores e inimigos que atacam
         this.units = this.heroes.concat(this.enemies);
         
         this.index = -1; // unidade ativa neste momento
@@ -152,17 +163,20 @@ var BattleScene = new Phaser.Class({
     },
     // quando o jogador seleciona o inimigo que quer atacar
     receivePlayerSelection: function(action, target) {
-        if(action == "attack") {
+        if(action === 0) {
             this.units[this.index].attack(this.enemies[target]);
             // abanar a camara
             this.cameras.main.shake(200, 0.01);
         }
-        if(action == "spell"){
+        if(action === 1){
             this.units[this.index].spell(this.enemies[target]);
+            // abanar a camara
+            this.cameras.main.shake(200, 0.01);
         }
+
         // timer para esperar pelo próximo turno
         this.time.addEvent({ delay: 3000, callback: this.nextTurn, callbackScope: this });        
-    },    
+    },
     endBattle: function() {       
         // limpa o estado, remove as sprites
         this.heroes.length = 0;
@@ -208,12 +222,20 @@ var Unit = new Phaser.Class({
     // atacar o inimigo selecionado
     spell: function(target) {
         if(target.living) {
-            target.takeDamage(this.magic);
+            target.takeMagicDamage(this.magic);
             this.scene.events.emit("Message", this.type + " attacks " + target.type + " for " + this.magic + " Magic damage");
         }
     },
     takeDamage: function(damage) {
         if(this.value.decrease(damage)){
+            this.menuItem.unitKilled();
+            this.living = false;
+            this.visible = false;
+            this.menuItem = null;
+        }
+    },
+    takeMagicDamage: function(magic){
+        if(this.value.decreaseMagic(magic)){
             this.menuItem.unitKilled();
             this.living = false;
             this.visible = false;
@@ -236,8 +258,8 @@ var PlayerCharacter = new Phaser.Class({
     Extends: Unit,
 
     initialize:
-    function PlayerCharacter(scene, x, y, texture, frame, type, value, damage) {
-        Unit.call(this, scene, x, y, texture, frame, type, value, damage);
+    function PlayerCharacter(scene, x, y, texture, frame, type, value, damage,magic) {
+        Unit.call(this, scene, x, y, texture, frame, type, value, damage,magic);
         // espelhar a imagem
         this.flipX = true;
         this.setScale(0.5);
@@ -373,7 +395,7 @@ var ActionsMenu = new Phaser.Class({
     },
     confirm: function() { 
         // selecionamos uma ação, vamos para o próximo menu e escolhemos um dos inimigos para aplicar a ação
-        this.scene.events.emit("SelectedAction");        
+        this.scene.events.emit("SelectedAction",this.menuItemIndex);
     }
     
 });
@@ -421,9 +443,9 @@ var UIScene = new Phaser.Class({
         // container para ter todos os menus
         this.menus = this.add.container();
                 
-        this.heroesMenu = new HeroesMenu(195, 153, this);
-        this.actionsMenu = new ActionsMenu(100, 153, this);            
-        this.enemiesMenu = new EnemiesMenu(8, 153, this);   
+        this.heroesMenu = new HeroesMenu(283, 235, this);
+        this.actionsMenu = new ActionsMenu(123, 235, this);
+        this.enemiesMenu = new EnemiesMenu(12, 235, this);
         
         // o menu selecionado actualmente
         this.currentMenu = this.actionsMenu;
@@ -472,17 +494,18 @@ var UIScene = new Phaser.Class({
         this.actionsMenu.deselect();
         this.enemiesMenu.deselect();
         this.currentMenu = null;
-        this.battleScene.receivePlayerSelection("attack", index);
+        this.battleScene.receivePlayerSelection(this.action,index);
     },
     onPlayerSelect: function(id) {
-        // quando é a vez do jogador, selecionamos um jogador ativo dos menu items dos jogadores, e o primeiro item do menu item das actions
+        // quando é a vez do jnaogador, seleciomos um jogador ativo dos menu items dos jogadores, e o primeiro item do menu item das actions
         // depois fazemos o actions menu ativo
         this.heroesMenu.select(id);
         this.actionsMenu.select(0);
         this.currentMenu = this.actionsMenu;
     },
     // o jogador escolhe quem quer atacar
-    onSelectedAction: function() {
+    onSelectedAction: function(action) {
+        this.action = this.actionsMenu.menuItemIndex;
         this.currentMenu = this.enemiesMenu;
         this.enemiesMenu.select(0);
     },
@@ -517,14 +540,14 @@ var Message = new Phaser.Class({
 
     initialize:
     function Message(scene, events) {
-        Phaser.GameObjects.Container.call(this, scene, 160, 30);
+        Phaser.GameObjects.Container.call(this, scene, 240, 40);
         var graphics = this.scene.add.graphics();
         this.add(graphics);
         graphics.lineStyle(1, 0xffffff, 0.8);
         graphics.fillStyle(0x031f4c, 0.3);        
         graphics.strokeRect(-90, -15, 180, 30);
         graphics.fillRect(-90, -15, 180, 30);
-        this.text = new Phaser.GameObjects.Text(scene, 0, 0, "", { color: "#ffffff", align: "center", fontSize: 13, wordWrap: { width: 170, useAdvancedWrap: true }});
+        this.text = new Phaser.GameObjects.Text(scene, 0, 0, "", { color: "#ffffff", height: 175, width: 238 , fontSize: 13, wordWrap: { width: 180, useAdvancedWrap: true }});
         this.add(this.text);
         this.text.setOrigin(0.5);        
         events.on("Message", this.showMessage, this);
