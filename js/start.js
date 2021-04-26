@@ -1,3 +1,11 @@
+/*
+Trabalho Prático Phaser
+Realizado por:
+Luís Alonso nº 17506
+Alberto Castro nº 17479
+Engenharia Informática
+Instituto Politécnico de Viana do Castelo
+*/
 var config = {
     type: Phaser.AUTO,
     parent: 'content',
